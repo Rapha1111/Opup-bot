@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from urllib.parse import urlparse
 
 import discord
@@ -8,13 +9,14 @@ from dotenv import load_dotenv
 from . import store
 
 COLOR = 0x4A90F0
+LOGO = Path(__file__).resolve().parent.parent / "assets" / "logo.png"
 CREDIT_EMOJI = "<:credit:1567952456271274146>"
 
 
 def referral_code(url: str) -> str | None:
     """Ce qui suit « opup.app/ » dans le lien (ex: https://opup.app/EPITA -> EPITA)."""
     code = urlparse(url).path.strip("/")
-    return code or None
+    return code.upper() or None
 
 
 def parse_link(raw: str) -> str | None:
@@ -94,12 +96,12 @@ async def link(interaction: discord.Interaction):
     code = referral_code(url)
     description = f"{CREDIT_EMOJI} **100 crédits offerts** avec le code : **{code}**" if code else None
     embed = discord.Embed(title="Rejoins la communauté OPUP", description=description, color=COLOR)
-    embed.set_thumbnail(url=interaction.client.user.display_avatar.url)
+    embed.set_thumbnail(url="attachment://logo.png")
     embed.set_footer(text="Crédits fictifs sans valeur monétaire")
     view = discord.ui.View()
     view.add_item(discord.ui.Button(label="Rejoindre", emoji="🔥", style=discord.ButtonStyle.link, url=url))
     # Réponse directe à l'interaction : ne nécessite pas la permission d'écrire dans le salon
-    await interaction.response.send_message(embed=embed, view=view)
+    await interaction.response.send_message(embed=embed, view=view, file=discord.File(LOGO, filename="logo.png"))
 
 
 @bot.tree.command(name="join", description="Recevoir le lien pour rejoindre la communauté OPUP")
