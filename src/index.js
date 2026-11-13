@@ -8,11 +8,11 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.once('clientReady', (c) => console.log(`Connecté en tant que ${c.user.tag}`));
 
 client.on('interactionCreate', async (i) => {
-  if (!i.isChatInputCommand()) return;
-  const cmd = map.get(i.commandName);
-  if (!cmd) return;
   try {
-    await cmd.execute(i);
+    if (i.isModalSubmit()) return await commands.handleModal(i);
+    if (!i.isChatInputCommand()) return;
+    const cmd = map.get(i.commandName);
+    if (cmd) await cmd.execute(i);
   } catch (err) {
     console.error(err);
     const msg = { content: '❌ Une erreur est survenue.', flags: MessageFlags.Ephemeral };

@@ -1,7 +1,9 @@
 const {
   SlashCommandBuilder,
   PermissionFlagsBits,
-  ChannelType,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
@@ -11,8 +13,17 @@ const {
 const store = require('./store');
 
 const COLOR = 0x5865f2;
-const INVITE_RE =
-  /^https?:\/\/(?:www\.)?(?:discord\.gg|discord(?:app)?\.com\/invite)\/[A-Za-z0-9-]+\/?$/i;
+const MODAL_ID = 'settings_modal';
+const FIELD_ID = 'invite_link';
+
+function parseLink(raw) {
+  try {
+    const u = new URL(raw.trim());
+    return ['http:', 'https:'].includes(u.protocol) && u.hostname ? u.href : null;
+  } catch {
+    return null;
+  }
+}
 
 const notConfigured = (admin) =>
   admin
@@ -24,54 +35,36 @@ const commands = [
     data: new SlashCommandBuilder()
       .setName('settings')
       .setDescription("Paramétrer le lien d'invitation vers la communauté OPUP")
-      .addStringOption((o) =>
-        o
-          .setName('lien')
-          .setDescription("Lien d'invitation (ex: https://discord.gg/xxxx). Vide = afficher le lien actuel")
-      )
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
       .setDMPermission(false),
     async execute(i) {
-      const lien = i.options.getString('lien')?.trim();
-      if (!lien) {
-        const current = store.getInvite(i.guildId);
-        return i.reply({
-          content: current
-            ? `🔗 Lien actuel : ${current}`
-            : "Aucun lien configuré. Utilise `/settings lien:<lien d'invitation>`.",
-          flags: MessageFlags.Ephemeral,
-        });
-      }
-      if (!INVITE_RE.test(lien)) {
-        return i.reply({
-          content: "❌ Lien invalide. Il doit ressembler à `https://discord.gg/xxxx`.",
-          flags: MessageFlags.Ephemeral,
-        });
-      }
-      store.setInvite(i.guildId, lien);
-      return i.reply({
-        content: `✅ Lien d'invitation OPUP enregistré pour ce serveur : ${lien}`,
-        flags: MessageFlags.Ephemeral,
-      });
+      const input = new TextInputBuilder()
+        .setCustomId(FIELD_ID)
+        .setLabel("Lien d'invitation OPUP")
+        .setPlaceholder('https://opup/...')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(200);
+      const current = store.getInvite(i.guildId);
+      if (current) input.setValue(current);
+      const modal = new ModalBuilder()
+        .setCustomId(MODAL_ID)
+        .setTitle('Paramètres OPUP')
+        .addComponents(new ActionRowBuilder().addComponents(input));
+      return i.showModal(modal);
     },
   },
   {
     data: new SlashCommandBuilder()
       .setName('link')
       .setDescription('Poster un embed avec un bouton pour rejoindre la communauté OPUP')
-      .addChannelOption((o) =>
-        o
-          .setName('salon')
-          .setDescription('Salon où poster le message (par défaut : ce salon)')
-          .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
-      )
       .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
       .setDMPermission(false),
     async execute(i) {
       const url = store.getInvite(i.guildId);
       if (!url) return i.reply({ content: notConfigured(true), flags: MessageFlags.Ephemeral });
 
-      const channel = i.options.getChannel('salon') ?? i.channel;
+      const channel = i.channel;
       const embed = new EmbedBuilder()
         .setColor(COLOR)
         .setTitle('🚀 Rejoins la communauté OPUP !')
@@ -106,5 +99,24 @@ const commands = [
     },
   },
 ];
+
+commands.handleModal = async (i) => {
+  if (i.customId !== MODAL_ID) return;
+  if (!i.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+    return i.reply({ content: '❌ Permission insuffisante.', flags: MessageFlags.Ephemeral });
+  }
+  const url = parseLink(i.fields.getTextInputValue(FIELD_ID));
+  if (!url) {
+    return i.reply({
+      content: '❌ Lien invalide. Il doit ressembler à `https://opup/...`.',
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+  store.setInvite(i.guildId, url);
+  return i.reply({
+    content: `✅ Lien OPUP enregistré pour ce serveur : ${url}`,
+    flags: MessageFlags.Ephemeral,
+  });
+};
 
 module.exports = commands;

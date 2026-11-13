@@ -5,8 +5,8 @@ Bot Discord qui permet à chaque serveur de promouvoir la communauté OPUP. Chaq
 ## Commandes
 | Commande | Qui | Rôle |
 |---|---|---|
-| `/settings [lien]` | Gérer le serveur | Enregistre (ou affiche) le lien d'invitation OPUP du serveur |
-| `/link [salon]` | Gérer le serveur | Poste un embed avec un bouton « Rejoindre OPUP » |
+| `/settings` | Gérer le serveur | Ouvre un popup pour saisir le lien OPUP du serveur |
+| `/link` | Gérer le serveur | Poste un embed dans le salon courant avec un bouton « Rejoindre OPUP » |
 | `/join` | Tout le monde | Envoie le lien en message éphémère |
 
 ## Installation
