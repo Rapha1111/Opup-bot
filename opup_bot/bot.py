@@ -7,7 +7,14 @@ from dotenv import load_dotenv
 
 from . import store
 
-COLOR = 0x5865F2
+COLOR = 0x4A90F0
+CREDIT_EMOJI = "<:credit:1567952456271274146>"
+
+
+def referral_code(url: str) -> str | None:
+    """Ce qui suit « opup.app/ » dans le lien (ex: https://opup.app/EPITA -> EPITA)."""
+    code = urlparse(url).path.strip("/")
+    return code or None
 
 
 def parse_link(raw: str) -> str | None:
@@ -84,13 +91,13 @@ async def link(interaction: discord.Interaction):
         return await interaction.response.send_message(
             "⚠️ Aucun lien configuré. Utilise d'abord `/settings`.", ephemeral=True
         )
-    embed = discord.Embed(
-        title="🚀 Rejoins la communauté OPUP !",
-        description="Clique sur le bouton ci-dessous pour rejoindre la communauté OPUP.",
-        color=COLOR,
-    )
+    code = referral_code(url)
+    description = f"{CREDIT_EMOJI} **100 crédits offerts** avec le code : **{code}**" if code else None
+    embed = discord.Embed(title="Rejoins la communauté OPUP", description=description, color=COLOR)
+    embed.set_thumbnail(url=interaction.client.user.display_avatar.url)
+    embed.set_footer(text="Crédits fictifs sans valeur monétaire")
     view = discord.ui.View()
-    view.add_item(discord.ui.Button(label="Rejoindre OPUP", style=discord.ButtonStyle.link, url=url))
+    view.add_item(discord.ui.Button(label="Rejoindre", emoji="🔥", style=discord.ButtonStyle.link, url=url))
     # Réponse directe à l'interaction : ne nécessite pas la permission d'écrire dans le salon
     await interaction.response.send_message(embed=embed, view=view)
 
