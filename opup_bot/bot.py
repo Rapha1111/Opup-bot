@@ -91,13 +91,8 @@ async def link(interaction: discord.Interaction):
     )
     view = discord.ui.View()
     view.add_item(discord.ui.Button(label="Rejoindre OPUP", style=discord.ButtonStyle.link, url=url))
-    try:
-        await interaction.channel.send(embed=embed, view=view)
-    except discord.HTTPException:
-        return await interaction.response.send_message(
-            "❌ Je ne peux pas écrire dans ce salon. Vérifie mes permissions.", ephemeral=True
-        )
-    await interaction.response.send_message("✅ Message envoyé.", ephemeral=True)
+    # Réponse directe à l'interaction : ne nécessite pas la permission d'écrire dans le salon
+    await interaction.response.send_message(embed=embed, view=view)
 
 
 @bot.tree.command(name="join", description="Recevoir le lien pour rejoindre la communauté OPUP")
